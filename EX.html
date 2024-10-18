@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        body { 
+            margin: 0; 
+            display: flex;
+            justify-content: center;
+            align-items: center; /* 세로 정렬을 중앙으로 */
+            height: 100vh;
+            position: relative;
+        }
+        canvas { 
+            display: block;
+            width: 100%; /* 전체 너비 */
+            height: 100%; /* 전체 높이 */
+        }
+        .survey-container {
+            position: absolute;
+            width: 300px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+            z-index: 10;  /* Ensure the survey is above the canvas */
+            top: 50%;  /* 수직 중앙 위치 */
+            left: 50%;  /* 수평 중앙 위치 */
+            transform: translate(-50%, -50%);  /* 정확한 중앙 정렬 */
+        }
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+<canvas id="canvas"></canvas>
+<script type="importmap">
+    {
+        "imports": {
+             "three": "https://cdn.jsdelivr.net/npm/three@0.141.0/build/three.module.js",
+             "GLTFLoader": "https://cdn.jsdelivr.net/npm/three@0.141.0/examples/jsm/loaders/GLTFLoader.js"
+         }
+    }
+</script>
+
+<script src="https://cdn.rawgit.com/schteppe/cannon.js/master/build/cannon.js"></script>
+
+<script type="module">
+    
+    import { GLTFLoader } from 'GLTFLoader';
+    import * as THREE from 'three';
+
+    const world = new CANNON.World();
+    world.gravity.set(0, -9.82, 0); // 중력 설정
+
+    // Three.js 설정
+    let scene = new THREE.Scene();
+    let renderer = new THREE.WebGLRenderer({
+        canvas: document.querySelector('#canvas'),
+        antialias: true // 안티앨리어싱 활성화
+    });
+    renderer.outputEncoding = THREE.sRGBEncoding;
+    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.setSize(window.innerWidth, window.innerHeight);
+
+    // 카메라 설정
+    let camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.set(5, 1, 5);
+    camera.lookAt(0, 0, 0);
+
+    scene.background = new THREE.Color('GRAY');
+    let light = new THREE.AmbientLight(0xffff00, 0.5);
+    let light2 = new THREE.PointLight(0xffffe0, 1);
+    light2.position.set(10, 10, 10);
+    scene.add(light);
+    scene.add(light2);
+
+    let loader = new GLTFLoader();
+    let model; // 도미노 모델을 여기에 저장할 것입니다.
+
+    // 도미노 모델 로드
+    loader.load('domino.glb', function(gltf) {
+        model = gltf.scene;
+        model.position.set(0, -3, 0);
+        scene.add(model);
+        animate();
+    });
+
+    function animate() {
+        requestAnimationFrame(animate);
+        world.step(1/60); // 물리 엔진 스텝
+
+        // THREE.js와 Cannon.js의 위치 동기화
+        if (model) {
+            model.position.y = -3; // Y좌표를 -3으로 고정
+        }
+
+        renderer.render(scene, camera);
+    }
+
+    // 설문조사 질문 설정
+    const questions = [
+        {
+            question: "1. 평소 가장 자주 이용하는 SNS 플랫폼은 무엇인가요?",
+            options: ["인스타그램", "유튜브", "트위터", "페이스북", "틱톡"]
+        },
+        {
+            question: "2. 가장 선호하는 영화 장르는 무엇인가요?",
+            options: ["액션", "코미디", "드라마", "공포", "애니메이션"]
+        },
+        {
+            question: "3. 가장 좋아하는 음식은 무엇인가요?",
+            options: ["한식", "중식", "일식", "양식", "패스트푸드"]
+        },
+        {
+            question: "4. 주말에 주로 어떤 활동을 하나요?",
+            options: ["영화 감상", "독서", "운동", "여행", "기타"]
+        },
+        {
+            question: "5. 가장 기억에 남는 여행지는 어디인가요?",
+            options: ["한국", "일본", "유럽", "미국", "기타"]
+        },
+        {
+            question: "6. 평소 가장 선호하는 음악 장르는 무엇인가요?",
+            options: ["힙합", "발라드", "록", "전자음악", "기타"]
+        },
+    ];
+
+    let currentQuestionIndex = 0;
+
+    // 설문조사 HTML 요소
+    const questionContainer = document.getElementById('questionContainer');
+    const nextButton = document.getElementById('nextButton');
+
+    function showQuestion() {
+        const currentQuestion = questions[currentQuestionIndex];
+        questionContainer.innerHTML = `<h2>${currentQuestion.question}</h2>`;
+        currentQuestion.options.forEach(option => {
+            questionContainer.innerHTML += `<div><input type="radio" name="answer" value="${option}"> ${option}</div>`;
+        });
+    }
+
+    nextButton.addEventListener('click', () => {
+        currentQuestionIndex++;
+        if (currentQuestionIndex < questions.length) {
+            showQuestion();
+            dropDomino(); // 다음 버튼 클릭 시 도미노 떨어뜨리기
+        } else {
+            questionContainer.innerHTML = "<h2>설문조사가 완료되었습니다. 감사합니다!</h2>";
+            nextButton.style.display = 'none'; // '다음' 버튼 숨기기
+        }
+    });
+
+    // 랜덤한 좌표로 도미노 떨어뜨리기
+    function dropDomino() {
+        if (model) {
+            const randomX = (Math.random() - 0.5) * 10; // -5에서 5 사이의 랜덤 X좌표
+            const randomZ = (Math.random() - 0.5) * 10; // -5에서 5 사이의 랜덤 Z좌표
+            const newDomino = model.clone(); // 기존 모델을 복제
+            newDomino.position.set(randomX, 5, randomZ); // 초기 Y좌표를 높게 설정
+            scene.add(newDomino); // 씬에 새로운 도미노 추가
+
+            // 물리 바디 추가
+            const shape = new CANNON.Box(new CANNON.Vec3(0.5, 1, 0.5)); // 도미노 크기 설정
+            const body = new CANNON.Body({
+                mass: 1,
+                position: new CANNON.Vec3(randomX, 5, randomZ) // 초기 위치
+            });
+            body.addShape(shape);
+            world.addBody(body);
+
+            // 애니메이션
+            fallDomino(newDomino, body);
+        }
+    }
+
+    // 도미노 떨어지는 애니메이션 구현
+    function fallDomino(domino, body) {
+        function animateFall() {
+            domino.position.copy(body.position); // Cannon.js의 위치로 Three.js 모델 위치 업데이트
+            domino.quaternion.copy(body.quaternion); // 회전도 동기화
+            requestAnimationFrame(animateFall); // 다음 프레임 호출
+        }
+        animateFall(); // 애니메이션 시작
+    }
+
+    // 처음 질문 표시
+    showQuestion();
+</script>
+
+<div class="survey-container">
+    <h1>설문조사</h1>
+    <form id="surveyForm">
+        <div class="question" id="questionContainer"></div>
+        <button type="button" id="nextButton">다음</button>
+    </form>
+    <div id="results" class="hidden"></div>
+</div>
+</body>
+</html>
+
+
+
+

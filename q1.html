@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+        }
+
+        .survey-container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255, 255, 255, 0.8);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="survey-container">
+        <h1>설문조사 질문</h1>
+        <form id="surveyForm">
+            <label for="question1">평소 가장 자주 이용하는 SNS 플랫폼은 무엇인가요?</label><br>
+            <input type="radio" id="option1" name="question1" value="인스타그램" required>
+            <label for="option1">인스타그램</label>
+            <input type="radio" id="option2" name="question1" value="유튜브">
+            <label for="option2">유튜브</label>
+            <input type="radio" id="option3" name="question1" value="트위터">
+            <label for="option3">트위터</label>
+            <input type="radio" id="option4" name="question1" value="에브리타임">
+            <label for="option4">에브리타임</label>
+            <input type="radio" id="option5" name="question1" value="블로그">
+            <label for="option5">블로그</label>
+            <br><br>
+            <input type="submit" value="다음">
+        </form>
+    </div>
+
+</body>
+</html>
